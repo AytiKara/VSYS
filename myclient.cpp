@@ -227,7 +227,7 @@ int main (int argc, char **argv)
         	cout<<list<<endl;
         }
 	}
-	while (eingabe != "quit");
+	while (strcmp(eingabe,"quit"));
 	close (create_socket);
 	return EXIT_SUCCESS;
 }

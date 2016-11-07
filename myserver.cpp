@@ -235,7 +235,7 @@ int main (void)
 	                  	path_filename += dir->d_name;
 	               	  	listOfFiles+=dir->d_name;
 	                  	listOfFiles+="\n";
-	                  	//cout << "Ausgabe: "<<path_filename<<endl;
+	                  	//file wird geöffnet
 	                  	pFile = fopen (path_filename.c_str(),"rb");
 	                  	if (pFile==NULL) perror ("Error opening file");
 	                  	else
