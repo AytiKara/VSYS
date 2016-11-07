@@ -104,7 +104,6 @@ int main (void)
 					
 					while (lsize)
 					{
-						send(new_socket,antwort,strlen(antwort),0);
 						if (lsize >= FBUF)
 						{
 							recv(create_socket, buffer, BUF - 1, 0);
@@ -120,8 +119,7 @@ int main (void)
 							send(new_socket,antwort,strlen(antwort),0);
 					
 
-						} else
-						{
+						} else {
 							recv(create_socket, buffer, BUF-1, 0);
 							cout << "Last block lsize: " << lsize << endl;
 							cout<<buffer<<endl;

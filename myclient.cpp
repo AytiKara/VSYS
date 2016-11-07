@@ -120,12 +120,11 @@ int main (int argc, char **argv)
 
 			char ausgabe[BUF];
 
-cout<<datei<<endl;
+			cout<<datei<<endl;
 			cout<<"!!!!!!Achtung Schleife!!!!!!"<<endl;
 			while (lsize)
 			{
 
-				size = recv(create_socket, ausgabe, BUF-1, 0);
 				ausgabe[size] = '\0';
 				cout << "<<<<<<<<<" << ausgabe << endl;
 				memset(ausgabe, 0, BUF);
@@ -140,6 +139,7 @@ cout<<datei<<endl;
 					}
 
 					send(create_socket, block, BUF, 0);
+					size = recv(create_socket, ausgabe, BUF-1, 0);
 					cout << "Sende Block " << anz << " lsize: " << lsize << endl;
 
 					lsize -= FBUF;
