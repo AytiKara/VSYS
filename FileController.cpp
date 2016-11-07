@@ -56,9 +56,14 @@ bool FileController::checkIfExists(string filename, int typeOfSide)
 	else return false;
 }
 
-long FileController::getSize(char filename[])
+long FileController::getSize(char filename[],int typeOfSide)
 {
-	ifstream infile (filename, ios::binary |	ios::in);
+	string eingabe = filename;
+
+	if(!typeOfSide)
+		eingabe= "download/" + eingabe;
+
+	ifstream infile (eingabe.c_str(), ios::binary |	ios::in);
 	infile.seekg (0, infile.end);
 	long size = infile.tellg();
 	infile.seekg(0);

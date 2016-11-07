@@ -10,6 +10,8 @@
 #include <iostream>
 #include <fstream>
 #include <dirent.h>
+#include <string>
+#include <sstream>
 #include "FileController.h"
 #define BUF 1024
 #define PORT 6543
@@ -17,7 +19,45 @@
 
 
 using namespace std;
+template <typename T>
+string numberToString(T x)
+{
+	stringstream ss;
+	string ssize;
+	ss << x;
+	ss >> ssize;
+	return ssize;
+}
+void sendMsg(int create_socket, char * input, int msgSize)
+{
+	string ssize = numberToString(msgSize);
+	string number = "";
+	if (msgSize < 100) {
+		number += "0";
+		if (msgSize < 10)
+			number += "0";
+	}
+	number += ssize;
+	send(create_socket, ssize.c_str(), 3, 0);
+	send(create_socket, input, msgSize , 0);
 
+}
+
+int recvMsg(int new_socket, char * input)
+{
+	memset(input, 0, BUF);
+	if (recv(new_socket, input, 3, 0) > 0) {
+		string sSize = input;
+		int iSize = atoi(sSize.c_str());
+
+		memset(input, 0, 4);
+		int ii = recv(new_socket, input, iSize, 0);
+		return ii;
+	} else
+		return 0;
+
+	return -1;
+}
 
 int main (void)
 {
@@ -43,209 +83,147 @@ int main (void)
 
 	addrlen = sizeof (struct sockaddr_in);
 
+	pid_t pid ;
+
 	while (1)
 	{
+
 		printf("Waiting for connections...\n");
 		new_socket = accept ( create_socket, (struct sockaddr *) &cliaddress, &addrlen );
+
+		pid = fork();
+		if (pid != 0) {
+			close(new_socket);
+			continue;
+		}
 		if (new_socket > 0)
 		{
+
 			printf ("Client connected from %s:%d...\n", inet_ntoa (cliaddress.sin_addr), ntohs(cliaddress.sin_port));
 			strcpy(buffer, "Welcome to myserver, Please enter your command:\n");
 			send(new_socket, buffer, strlen(buffer), 0);
 		}
+
+
+
+
 		do
 		{
+
 			memset(buffer, 0, BUF);
 			FileController fc;
-			size = recv (new_socket, buffer, BUF  , 0);														//<<-------
+			size = recvMsg(new_socket, buffer);
 
 			if ( size > 0)
 			{
 
-				// 	if (size > 1)
-				// 	{
 				buffer[size] = '\0';
 				string eingang = buffer;
 				if (eingang == "put")
 				{
 
 					//Put empfangen
-					cout << ">> " << buffer << " Empfangen" << endl;
 					memset(buffer, 0, BUF);
 
 					//Dateiname empfangen
 					char dateiname[BUF];
 					memset(dateiname, 0, BUF);
 
-					size=recv(new_socket, dateiname, BUF-1 , 0);												//<<-------
-					dateiname[size]='\0';
-					cout << ">> " << dateiname << " Empfangen" << endl;
+					recvMsg(new_socket, dateiname);
 
 					//Dateigröße empfangen
 					char cSize[BUF];
 					memset(cSize, 0, BUF);
-
-					size= recv(new_socket, cSize, BUF - 1 , 0);													//<<-------
-					cSize[size]='\0';
-					cout << ">> Size: " << cSize << " bytes " << "Empfangen" << endl;
-					
+					recvMsg(new_socket, cSize);
 					long lsize = atol(cSize);
-					cout << ">> Long Size " << lsize << endl;
 					memset(cSize, 0, BUF);
 
-
 					int anz = 0;
-					cout << "!!!!!!!Achtung Schleife!!!!!!" << endl;
-					char datei[lsize];
-
 					int pos = 0;
-					char antwort[]=" OK Transfer! ";
-					
-					
+
+					string sDateiname = dateiname;
+					sDateiname = "download/" + sDateiname;
+					ofstream outfile (sDateiname.c_str(), ios::binary | ios::out);
+
 					while (lsize)
 					{
-						send(new_socket,antwort,strlen(antwort),0);
+
 						if (lsize >= FBUF)
 						{
-							recv(create_socket, buffer, BUF - 1, 0);
-							cout << "Block empfangen" << endl;
-							
-							for (int k = 0; k < FBUF; k++)
-								datei[pos + k] = buffer[k];
-
-
+							recvMsg(new_socket, buffer);
 							lsize -= FBUF;
-							pos += FBUF;
-
-							send(new_socket,antwort,strlen(antwort),0);
-					
-
+							outfile.write(buffer, FBUF);
 						} else
 						{
-							recv(create_socket, buffer, BUF-1, 0);
-							cout << "Last block lsize: " << lsize << endl;
-							cout<<buffer<<endl;
-							for (int k = 0; k < lsize; k++)
-								datei[pos + k] = buffer[k];
-
-
-							pos+=lsize;
+							recvMsg(new_socket, buffer);
+							outfile.write(buffer, lsize);
 							lsize = 0;
-							cout << "Letzten Block empfangen size: "<<pos << endl;
-							send(new_socket,antwort,strlen(antwort),0);
-					
-							break;
+
 						}
+
 						memset(buffer, 0, BUF);
-						cout << "Block " << anz << " Empfangen Size: " << pos << "/"<<lsize<<endl;
 						anz++;
 					}
-					cout<<datei<<endl;
-					fc.writeFile(dateiname, datei, lsize, 0);
+					outfile.close();
 					memset(dateiname, 0, BUF);
-					memset(datei, 0, lsize);
-					cout << "Fertig" << endl;
+
+					cout << " Fertig" << endl;
+
+				} else if (eingang == "get")
+				{
+
+					char dateiname [BUF];
+					memset(dateiname, 0, BUF);
+					recvMsg(new_socket, dateiname);
+
+					//Send der Dateigröße
+					long lsize = fc.getSize(dateiname, 0);
+					char  ssize[BUF] ;
+					strcpy(ssize, numberToString(lsize).c_str());
+					sendMsg(new_socket, ssize, strlen(ssize));
+
+					char block[BUF];
+					int anz = 0;
 
 
+					string sDateiname = dateiname;
+					sDateiname = "download/" + sDateiname;
+					ifstream infile (sDateiname.c_str(), ios::binary |	ios::in);
 
-					// 			// recv(new_socket,buffer,BUF-1,0);
-					// 			// char dateiname[BUF];
-					// 			// strcpy(dateiname,buffer);
-					// 			// memset(buffer,0,BUF);
-					// 			// recv(new_socket,buffer,BUF-1,0);
+					while (lsize)
+					{
 
-					// 			// long lsize= atol(buffer);
+						if (lsize >= FBUF)
+						{
 
-					// 			// char datei[lsize];
-					// 			// memset(buffer,0,BUF);
-					// 			// for(int i=0;i<lsize;i++)
-					// 			// {
-					// 			// 	recv(new_socket,buffer,BUF-1,0);
-					// 			// 	for(int k = 0; k=sizeof(buffer);k++)
-					// 			// 	{
-					// 			// 		datei[i]=buffer[k];
-					// 			// 		i+=k;
-					// 			// 	}
-					// 			// 	memset(buffer,0,BUF);
-					// 			// }
-					// 			// cout<<"Fertig"<<endl;
+							//Sendet den 500 byte großen Block
+							infile.read(block, FBUF);
+							sendMsg(new_socket, block, FBUF);
+							//neue Position wird festgelegt
+							lsize -= FBUF;
 
-					// 			// fc.writeFile(dateiname ,datei,lsize,0);
+						}
+						else
+						{
+							//Restlicher Block wird gelesen
+							infile.read(block, lsize);
 
+							//Letzter Block wird gesendet
+							sendMsg(new_socket, block, lsize);
+							lsize = 0;
 
-					// 			// memset(buffer, 0, BUF);
-					// 			// recv(new_socket, buffer, BUF-1,0);
-					// 			// char filename[BUF];
-					// 			// strcpy(filename,buffer);
+						}
 
-					// 			// memset(buffer, 0, BUF);
-					// 			// cout<<filename<<endl;
-					// 			// if(filename!="NO"){
-					// 			// recv(new_socket, buffer, BUF-1, 0);
-					// 			// buffer;
-
-					// 			//  cout<<"Filename= "<<filename<<endl;
-					// 			//  cout<<"Datei= "<<buffer;
-
-
-					// 			// 	fc.writeFile(filename, buffer,0);
-
-					// 			// }else
-					// 			// cout<<"Geht nicht!"<<endl;
-
+						memset(block, 0, BUF);
+						anz++;
+					}
+					infile.close();
+					cout << " Fertig" << endl;
+				}else
+				if(eingang =="list")
+				{
+							// code reingeben
 				}
-				// 		else if (eingang == "get")
-				// 		{
-
-				// 			// 	memset(buffer, 0, BUF);
-				// 			//   	recv(new_socket, buffer, BUF-1,0);
-				// 			//   	string filename = buffer;
-				// 			//   	cout<<filename<<endl;
-				// 			//  if(!fc.checkIfExists(filename,0)){
-				// 			//    filename = "NO";
-				// 			//    cout<<"Die Datei wurde nicht gefunden."<<endl;
-				// 			//  }else{
-				// 			//  	send(new_socket,filename.c_str(),filename.size(),0);
-				// 			//    filename = fc.getFile(filename,0);
-				// 			//    cout<<filename<<endl;
-				// 			//  }
-				// 			// send(new_socket, filename.c_str(),filename.size(), 0);
-
-				// 		}
-				// 		else if (eingang == "list")
-				// 		{
-
-				// 			DIR *d;
-				// 			struct dirent *dir;
-				// 			d = opendir("./download");
-
-				// 			int counterStrike = 0;
-				// 			string gPaket = "";
-				// 			if (d)
-				// 			{
-				// 				while ((dir = readdir(d)) != NULL)
-				// 				{
-
-				// 					gPaket += dir->d_name;
-				// 					gPaket += "\n";
-				// 				}
-				// 				closedir(d);
-
-				// 			}
-				// 			send(new_socket, gPaket.c_str(), gPaket.size(), 0);
-
-				// 		}
-				// 		else {
-				// 			cout << "Message received: " << buffer << endl;
-				// 		}
-				//printf ("Message received: %s\n", buffer);
-				// } else
-				// {
-				// 	int a = buffer[0];
-				// 	cout << "Size 1 buffer Ausgabe --> " << a << endl;
-				// }
-				// else
-				// 	cout<<"Message: "<<buffer<<endl;
 			}
 			else if (size == 0)
 			{

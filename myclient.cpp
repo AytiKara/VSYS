@@ -14,13 +14,52 @@
 #include <sstream>
 #define BUF 1024
 #define PORT 6543
-#define OK 1
-#define NOTOK 0
 #define FBUF 500
 
 using namespace std;
 
+template <typename T>
+string numberToString(T x)
+{
+	stringstream ss;
+	string ssize;
+	ss << x;
+	ss >> ssize;
+	return ssize;
+}
 
+
+void sendMsg(int create_socket, char * input, int msgSize)
+{
+	string ssize = numberToString(msgSize);
+	string number = "";
+	if (msgSize < 100) {
+		number += "0";
+		if (msgSize < 10)
+			number += "0";
+	}
+	number += ssize;
+	send(create_socket, ssize.c_str(), 3, 0);
+	send(create_socket, input, msgSize , 0);
+
+}
+
+
+int recvMsg(int new_socket, char * input)
+{
+	memset(input, 0, BUF);
+	if (recv(new_socket, input, 3, 0) > 0) {
+		string sSize = input;
+		int iSize = atoi(sSize.c_str());
+
+		memset(input, 0, 4);
+		int ii = recv(new_socket, input, iSize, 0);
+		return ii;
+	} else
+		return 0;
+
+	return -1;
+}
 
 int main (int argc, char **argv)
 {
@@ -66,157 +105,125 @@ int main (int argc, char **argv)
 	char eingabe[BUF];
 	do
 	{
+		// do
+		// {
+		// 	cout<<"Username: "<<endl;
+
+
+		// }while();
+
 		memset(eingabe, 0, BUF);
-		cout << "Anfrage: ";
-
-		cin >> eingabe;
-		// transform(eingabe.begin(),eingabe.end(),eingabe.begin(),::tolower);
-
+		cout << "Anfrage: ";	cin >> eingabe;
+		//File Objekt ist zuständig für das schreiben und lesen der Datei
 		FileController fc;
-		send(create_socket, eingabe, strlen(eingabe), 0);
-		cout << ">> Sende: " << eingabe << endl;
+		sendMsg(create_socket, eingabe, strlen(eingabe));
 		string ee = eingabe;
-		int zz = 0;
+
+
 		if (ee == "put")
 		{
 
 			char dateiname [BUF];
 			memset(dateiname, 0, BUF);
 
-			//Eingabe vom Dateinamen
+			//Eingabe und Senden --> Dateinamen --> Server
 			cout << "Datei: ";
 			cin >> dateiname;
+			sendMsg(create_socket, dateiname, strlen(dateiname));
 
-			//sende Dateinamen
-			send(create_socket, dateiname, strlen(dateiname), 0);
-			cout << ">> Sende Dateiname: " << dateiname << endl;
+			//Send der Dateigröße
+			long lsize = fc.getSize(dateiname, 1);
+			char  ssize[BUF] ;
+			strcpy(ssize, numberToString(lsize).c_str());
+			sendMsg(create_socket, ssize, strlen(ssize));
 
-			//Ermittle Size von Datei
-			long lsize = fc.getSize(dateiname);
-			cout << ">> Size ermittelt von " << dateiname << " ermittelt: " << lsize << " bytes" << endl;
-
-
-			//Datei lesen und speichern
-			char datei[lsize];
-			cout << ">> File lesen" << endl;
-			fc.getFile(dateiname, datei, lsize, 1);
-			fc.writeFile(dateiname,datei,lsize,1);
-			cout << ">> Datei gelesen und Temporär gespeichert" << endl;
-
-
-			//Sende Dateigröße
-			stringstream ss;
-			string ssize;
-			ss << lsize;
-			ss >> ssize;
-			send(create_socket, ssize.c_str(), ssize.size(), 0);
-			cout << ">> Sende Size: " << ssize << " bytes" << endl;
-
-
-
-			int pos = 0;
 			char block[BUF];
 			int anz = 0;
 
-			char ausgabe[BUF];
+			ifstream infile (dateiname, ios::binary |	ios::in);
 
-cout<<datei<<endl;
-			cout<<"!!!!!!Achtung Schleife!!!!!!"<<endl;
 			while (lsize)
 			{
-
-				size = recv(create_socket, ausgabe, BUF-1, 0);
-				ausgabe[size] = '\0';
-				cout << "<<<<<<<<<" << ausgabe << endl;
-				memset(ausgabe, 0, BUF);
 
 				if (lsize >= FBUF)
 				{
 
-					//Blockweise sende 1 Block ist 500 Byte groß
-					for (int k = pos; k < FBUF; k++){
-						block[k] = datei[k];
-						cout<<"#";
-					}
+					//Sendet den 500 byte großen Block
+					infile.read(block, FBUF);
+					sendMsg(create_socket, block, FBUF);
 
-					send(create_socket, block, BUF, 0);
-					cout << "Sende Block " << anz << " lsize: " << lsize << endl;
-
+					//neue Position wird festgelegt
 					lsize -= FBUF;
-					pos += FBUF;
 
 
 				}
 				else
 				{
+					//Restlicher Block wird gelesen
+					infile.read(block, lsize);
 
-					cout << "Last block lsize: " << lsize << endl;
-					for (int k = pos; k <= lsize; k++){
-						block[k] = datei[k];
-						cout<<"#";
-					}
-
-					send(create_socket, block, BUF, 0);
-
-					cout << "Sende Letzten Block" << endl;
+					//Letzter Block wird gesendet
+					sendMsg(create_socket, block, lsize);
 					lsize = 0;
 
-
 				}
-				cout << "Rest lsize: " << lsize << endl;
+
 				memset(block, 0, BUF);
 				anz++;
 			}
-			cout << ">> Fertig" << endl;
-
-
-
-			// 	// send(create_socket, eingabe, BUF,0);
-			// 	// cout<<"Datei: ";
-			// 	//   	memset(eingabe, 0 ,BUF);
-			// 	//   	cin>>eingabe;
-			// 	// 	send(create_socket, eingabe,BUF, 0);
-			// 	//   	if(!fc.checkIfExists(eingabe,1)){
-			// 	//     	strcpy(eingabe,"NO");
-			// 	//     	cout<<"Die Datei wurde nicht gefunden."<<endl;
-			// 	//   	}else{
-			// 	//     	strcpy(eingabe,fc.getFile(eingabe,1));
-			// 	//   }
-			// 	// send(create_socket, eingabe,BUF, 0);
+			infile.close();
+			cout << " Fertig" << endl;
 
 		}
-		// else if (eingabe == "get")
-		// {
+		else if (ee == "get")
+		{
 
 
-		// 	//        	cout<<"Datei: ";
-		// 	//        	cin>>eingabe;
-		// 	// send(create_socket, eingabe, BUF,0);
+			//Dateiname empfangen
+			char dateiname[BUF];
+			memset(dateiname, 0, BUF);
+			cout<<"Datei: "; cin>>dateiname;
+			sendMsg(create_socket,dateiname,strlen(dateiname));
 
+			//Dateigröße empfangen
+			char cSize[BUF];
+			memset(cSize, 0, BUF);
+			recvMsg(create_socket, cSize);
+			long lsize = atol(cSize);
+			memset(cSize, 0, BUF);
 
-		// 	//        	memset(buffer, 0, BUF);
-		// 	//         	recv(create_socket, buffer, BUF-1,0);
-		// 	//         	char filename[BUF] = buffer;
+			int anz = 0;
+			int pos = 0;
 
-		// 	//          memset(buffer, 0, BUF);
-		// 	//         	if(filename!="NO"){
+			ofstream outfile (dateiname, ios::binary | ios::out);
 
-		// 	//          recv(create_socket, buffer, BUF-1, 0);
-		// 	//         	string datei = buffer;
+			while (lsize)
+			{
 
-		// 	//          	fc.writeFile(filename, datei,1);
-		// 	//          }else
-		// 	//          cout<<"Die Datei wurde nicht gefunden"<<endl;
+				if (lsize >= FBUF)
+				{
+					recvMsg(create_socket, buffer);
+					lsize -= FBUF;
+					outfile.write(buffer, FBUF);
+				} else
+				{
+					recvMsg(create_socket, buffer);
+					outfile.write(buffer, lsize);
+					lsize = 0;
+				}
 
-		// }
-		// else if (eingabe == "list")
-		// {
-		// 	char irg[BUF];
-		// 	memset(irg, 0, BUF);
+				memset(buffer, 0, BUF);
+				anz++;
+			}
+			outfile.close();
+			memset(dateiname, 0, BUF);
 
-		// 	size = recv(create_socket, irg, BUF - 1, 0);
-		// 	cout << irg << endl;
-		// }
+			cout << " Fertig" << endl;
+		}else
+		if(ee == "list")
+		{
+			// code eingeben
+		}
 
 	}
 	while (eingabe != "quit");

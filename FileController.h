@@ -13,6 +13,6 @@ public:
 	void writeFile(char filename[], char *dateiname, long size, int typeOfSide);
 	void getFile(char filename[], char * datei, long size, int typeOfSide );
 	bool checkIfExists(string filename, int typeOfSide);
-	long getSize(char filename[]);
+	long getSize(char filename[],int typeOfSide);
 
 };
