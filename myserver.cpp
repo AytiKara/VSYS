@@ -103,25 +103,18 @@ int main (void)
 			strcpy(buffer, "Welcome to myserver, Please enter your command:\n");
 			send(new_socket, buffer, strlen(buffer), 0);
 		}
-
-
-
-
 		do
 		{
-
 			memset(buffer, 0, BUF);
 			FileController fc;
 			size = recvMsg(new_socket, buffer);
 
 			if ( size > 0)
 			{
-
 				buffer[size] = '\0';
 				string eingang = buffer;
 				if (eingang == "put")
 				{
-
 					//Put empfangen
 					memset(buffer, 0, BUF);
 
@@ -169,7 +162,7 @@ int main (void)
 
 					cout << " Fertig" << endl;
 
-				} else if (eingang == "get")
+				}else if (eingang == "get")
 				{
 
 					char dateiname [BUF];
@@ -219,11 +212,56 @@ int main (void)
 					}
 					infile.close();
 					cout << " Fertig" << endl;
-				}else
-				if(eingang =="list")
-				{
-							// code reingeben
-				}
+				}else if(eingang=="list")
+           		{
+	           	  DIR *d;
+	              struct dirent *dir;
+	              //TODO: ändere download in eingabe von user
+	              d = opendir("./download");
+	              string listOfFiles="";
+
+	              FILE *pFile;
+	              long size;
+	              string path_filename= "";
+	              stringstream ss;
+	              string dumpstring = "";
+				  char fileNames[BUF];
+	              if(d)
+	              {
+	                while ((dir = readdir(d)) != NULL)
+	                {
+	                	//TODO ändere download in eingabe von user
+	                	path_filename = "download/";
+	                  	path_filename += dir->d_name;
+	               	  	listOfFiles+=dir->d_name;
+	                  	listOfFiles+="\n";
+	                  	//cout << "Ausgabe: "<<path_filename<<endl;
+	                  	pFile = fopen (path_filename.c_str(),"rb");
+	                  	if (pFile==NULL) perror ("Error opening file");
+	                  	else
+	                  	{
+	                    	fseek (pFile, 0, SEEK_END);
+	                    	size=ftell (pFile);
+	                    	fclose (pFile);
+	                    	//printf ("Size of : %ld bytes.\n",size);
+	                    	dumpstring = "";
+	                    	ss.str(string());
+	                    	ss << size;
+	                    	dumpstring = ss.str();
+	                    	listOfFiles += dumpstring;
+	                    	listOfFiles += " Bytes\n";
+	                    	//cout<<dumpstring;
+	                  	}
+	                }
+	                closedir(d);
+	                strcat(fileNames, listOfFiles.c_str());
+	              }
+              	  sendMsg(new_socket, fileNames, strlen(fileNames));
+
+            }
+            else
+           	cout<<"Message received: "<<eingang<<endl;
+
 			}
 			else if (size == 0)
 			{

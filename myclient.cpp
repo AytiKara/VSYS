@@ -219,12 +219,13 @@ int main (int argc, char **argv)
 			memset(dateiname, 0, BUF);
 
 			cout << " Fertig" << endl;
-		}else
-		if(ee == "list")
-		{
-			// code eingeben
-		}
-
+		}else if(ee=="list")
+      	{
+      		char list[BUF];
+      		memset(list,0,BUF);
+      		recvMsg(create_socket, list);
+        	cout<<list<<endl;
+        }
 	}
 	while (eingabe != "quit");
 	close (create_socket);
