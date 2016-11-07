@@ -1,0 +1,9 @@
+*.pdf
+*.txt
+*.o
+myserver
+myclient
+*.png
+bild
+probe
+/download/*

@@ -1,0 +1,17 @@
+#include <iostream>
+using namespace std;
+
+class FileController
+{
+public:
+	FileController();
+	~FileController();
+	/*typeOfSide :
+					0 is Server
+					1 is Client
+	*/
+	void writeFile(char filename[], string dateiname,int typeOfSide);
+	char [] getFile(char filename[], int typeOfSide);
+	bool checkIfExists(string filename,int typeOfSide);
+
+};

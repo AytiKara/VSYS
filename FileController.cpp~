@@ -1,0 +1,69 @@
+#include <iostream>
+#include <fstream>
+#include <string.h>
+#include "FileController.h"
+
+using namespace std;
+FileController::FileController()
+{
+  
+}
+FileController::~FileController()
+{
+
+}
+void FileController::writeFile(char filename[],string datei,int typeOfSide)
+{
+  char down[]="download/";
+	if(!typeOfSide)
+		strcat(down,filename);
+	
+	ofstream myfile (down,ios::binary);
+  if (myfile.is_open())
+  {
+
+    myfile << datei;
+   
+    myfile.close();
+  }
+  else cout << "Unable to open file";
+} 
+
+char * FileController::getFile(char filename[], int typeOfSide)
+{
+  char down[]="download/";
+  string line;
+  string ganz="";
+
+  if(!typeOfSide)
+  	strcat(down,filename);
+  ifstream myfile (down,ios::binary);
+  if (myfile.is_open())
+  {
+    while ( getline (myfile,line) )
+    {
+     ganz += line+"\n";
+    }
+    myfile.close();
+    return ganz;
+  }else
+  {
+  return "File not found!";
+  }
+
+
+}
+
+bool FileController::checkIfExists(string filename,int typeOfSide)
+{
+
+	if(!typeOfSide)
+		filename="download/"+ filename;
+
+	ifstream myfile(filename.c_str());
+	if (myfile.is_open())
+  	{
+    return true;
+  	}
+  else return false;
+}

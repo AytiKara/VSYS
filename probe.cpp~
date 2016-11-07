@@ -1,0 +1,51 @@
+#include <iostream>
+#include <fstream>
+#include <dirent.h>
+using namespace std;
+
+string getFile(string filename)
+{
+	string line;
+	string ganz="";
+  ifstream myfile (filename.c_str(), ios::binary);
+  if (myfile.is_open())
+  {
+    while ( getline (myfile,line) )
+    {
+     cout<<line<<endl;
+    }
+    myfile.close();
+    return ganz;
+  }else
+  {
+  	
+ 	return "File not found!";
+ 	}
+}
+
+int main()
+{
+	//cout<<getFile("myte3xt.txt")<<endl;
+  cout<<"Eingabe: ";
+  string eingabe;
+  cin>>eingabe;
+
+  getFile(eingabe);
+		// DIR *dd;
+  //             struct dirent *ddir;
+  //             dd = opendir("download");
+
+
+  //             if(dd)
+  //             {
+  //               while ((ddir = readdir(dd)) != NULL)
+  //               {
+            
+  //                   //send(new_socket, dir->d_name, strlen(dir->d_name),0);
+  //                   string ausgabe = ddir->d_name;
+  //                   cout<<ausgabe<<endl;
+  //                   //send(new_socket, "\n", strlen("\n"),0);	
+  //               }
+  //               closedir(dd);
+  //             }
+}
