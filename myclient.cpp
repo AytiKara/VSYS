@@ -222,7 +222,10 @@ int main (int argc, char **argv)
 		}else
 		if(ee == "list")
 		{
-			// code eingeben
+			char list[BUF];
+      		memset(list,0,BUF);
+      		recvMsg(create_socket, list);
+        	cout<<list<<endl;
 		}
 
 	}

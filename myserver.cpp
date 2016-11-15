@@ -222,7 +222,49 @@ int main (void)
 				}else
 				if(eingang =="list")
 				{
-							// code reingeben
+					 DIR *d;
+	              struct dirent *dir;
+	              //TODO: ändere download in eingabe von user
+	              d = opendir("./download");
+	              string listOfFiles="";
+
+	              FILE *pFile;
+	              long size;
+	              string path_filename= "";
+	              stringstream ss;
+	              string dumpstring = "";
+				  char fileNames[BUF];
+	              if(d)
+	              {
+	                while ((dir = readdir(d)) != NULL)
+	                {
+	                	//TODO ändere download in eingabe von user
+	                	path_filename = "download/";
+	                  	path_filename += dir->d_name;
+	               	  	listOfFiles+=dir->d_name;
+	                  	listOfFiles+="\n";
+	                  	//file wird geöffnet
+	                  	pFile = fopen (path_filename.c_str(),"rb");
+	                  	if (pFile==NULL) perror ("Error opening file");
+	                  	else
+	                  	{
+	                    	fseek (pFile, 0, SEEK_END);
+	                    	size=ftell (pFile);
+	                    	fclose (pFile);
+	                    	//printf ("Size of : %ld bytes.\n",size);
+	                    	dumpstring = "";
+	                    	ss.str(string());
+	                    	ss << size;
+	                    	dumpstring = ss.str();
+	                    	listOfFiles += dumpstring;
+	                    	listOfFiles += " Bytes\n";
+	                    	//cout<<dumpstring;
+	                  	}
+	                }
+	                closedir(d);
+	                strcat(fileNames, listOfFiles.c_str());
+	              }
+              	  sendMsg(new_socket, fileNames, strlen(fileNames));
 				}
 			}
 			else if (size == 0)

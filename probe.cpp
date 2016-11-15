@@ -70,7 +70,7 @@ void newDataFile()
 	// write to outfile
 	outfile.write (buffer, size);
 
-	// release dynamically-allocated memory
+// 	// release dynamically-allocated memory
 	delete []	buffer;
 	cout << "Hey 6" << endl;
 	infile.close();
@@ -79,28 +79,34 @@ void newDataFile()
 }
 
 
+
 int main()
 {
-	// char * mblock;
-	// streampos size=getFileBinary(mblock);
-	// setFileBinary(mblock,size);
 
 
-	// cout << "Hey 01" << endl;
-
-	char  memblock[500];
-	long size = getFileBinary(memblock);
-	cout << "Hey 02: " << size << endl;
-
-	setFileBinary(memblock, size);
-	cout << "Hey 03" << endl;
 
 
-	// cout << "Hey 04" << endl;
-	//writeFile();
+
+// char * mblock;
+// streampos size=getFileBinary(mblock);
+// setFileBinary(mblock,size);
+
+
+// cout << "Hey 01" << endl;
+
+char  memblock[500];
+long size = getFileBinary(memblock);
+cout << "Hey 02: " << size << endl;
+
+setFileBinary(memblock, size);
+cout << "Hey 03" << endl;
+
+
+// cout << "Hey 04" << endl;
+//writeFile();
 
 // newDataFile();
 //delete [] mblock;
-	//getFile("abc.txt");
+//getFile("abc.txt");
 
 }
