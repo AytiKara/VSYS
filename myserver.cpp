@@ -14,7 +14,7 @@
 #include <sstream>
 #include "FileController.h"
 #define BUF 1024
-#define PORT 6543
+//#define PORT 6543
 #define FBUF 500
 
 
@@ -59,12 +59,22 @@ int recvMsg(int new_socket, char * input)
 	return -1;
 }
 
-int main (void)
+int main (int argc, char **argv)
 {
 	int create_socket, new_socket;
 	socklen_t addrlen;
 	char buffer[BUF];
 	int size;
+	int PORT;
+	if (argc < 3)
+  	{
+       printf("Usage: %s Port Downloadverzeichnis\n", argv[0]);
+       exit(EXIT_FAILURE);
+  	}
+
+  	errno = 0;
+  	PORT = strtol(argv[1], &argv[1], 10);
+
 	struct sockaddr_in address, cliaddress;
 
 	create_socket = socket (AF_INET, SOCK_STREAM, 0);
@@ -217,7 +227,7 @@ int main (void)
 	           	  DIR *d;
 	              struct dirent *dir;
 	              //TODO: ändere download in eingabe von user
-	              d = opendir("./download");
+	              d = opendir(argv[2]);
 	              string listOfFiles="";
 
 	              FILE *pFile;
