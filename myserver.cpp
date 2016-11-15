@@ -14,7 +14,7 @@
 #include <sstream>
 #include "FileController.h"
 #define BUF 1024
-#define PORT 6543
+//#define PORT 6543
 #define FBUF 500
 
 
@@ -59,12 +59,22 @@ int recvMsg(int new_socket, char * input)
 	return -1;
 }
 
-int main (void)
+int main (int argc, char **argv)
 {
 	int create_socket, new_socket;
 	socklen_t addrlen;
 	char buffer[BUF];
 	int size;
+	int PORT;
+	if (argc < 3)
+  	{
+       printf("Usage: %s Port Downloadverzeichnis\n", argv[0]);
+       exit(EXIT_FAILURE);
+  	}
+
+  	errno = 0;
+  	PORT = strtol(argv[1], &argv[1], 10);
+
 	struct sockaddr_in address, cliaddress;
 
 	create_socket = socket (AF_INET, SOCK_STREAM, 0);
@@ -103,25 +113,18 @@ int main (void)
 			strcpy(buffer, "Welcome to myserver, Please enter your command:\n");
 			send(new_socket, buffer, strlen(buffer), 0);
 		}
-
-
-
-
 		do
 		{
-
 			memset(buffer, 0, BUF);
 			FileController fc;
 			size = recvMsg(new_socket, buffer);
 
 			if ( size > 0)
 			{
-
 				buffer[size] = '\0';
 				string eingang = buffer;
 				if (eingang == "put")
 				{
-
 					//Put empfangen
 					memset(buffer, 0, BUF);
 
@@ -169,7 +172,7 @@ int main (void)
 
 					cout << " Fertig" << endl;
 
-				} else if (eingang == "get")
+				}else if (eingang == "get")
 				{
 
 					char dateiname [BUF];
@@ -219,13 +222,14 @@ int main (void)
 					}
 					infile.close();
 					cout << " Fertig" << endl;
-				}else
-				if(eingang =="list")
-				{
-					 DIR *d;
+
+				}else if(eingang=="list")
+           		{
+	           	  DIR *d;
 	              struct dirent *dir;
 	              //TODO: ändere download in eingabe von user
-	              d = opendir("./download");
+	              d = opendir(argv[2]);
+
 	              string listOfFiles="";
 
 	              FILE *pFile;
@@ -265,7 +269,12 @@ int main (void)
 	                strcat(fileNames, listOfFiles.c_str());
 	              }
               	  sendMsg(new_socket, fileNames, strlen(fileNames));
-				}
+
+
+            }
+            else
+           	cout<<"Message received: "<<eingang<<endl;
+
 			}
 			else if (size == 0)
 			{

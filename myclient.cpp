@@ -13,7 +13,7 @@
 #include "FileController.h"
 #include <sstream>
 #define BUF 1024
-#define PORT 6543
+//#define PORT 6543
 #define FBUF 500
 
 using namespace std;
@@ -67,12 +67,14 @@ int main (int argc, char **argv)
 	char buffer[BUF];
 	struct sockaddr_in address;
 	int size;
+	int port;
 
-	if ( argc < 2 )
+	if ( argc < 3 )
 	{
-		printf("Usage: %s ServerAdresse\n", argv[0]);
+		printf("Usage: %s ServerAdresse Port\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
+
 
 	if ((create_socket = socket (AF_INET, SOCK_STREAM, 0)) == -1)
 	{
@@ -80,9 +82,11 @@ int main (int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	port = atol(argv[2]);
+
 	memset(&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
-	address.sin_port = htons (PORT);
+	address.sin_port = htons (port);
 	inet_aton (argv[1], &address.sin_addr);
 
 	if (connect ( create_socket, (struct sockaddr *) &address, sizeof (address)) == 0)
@@ -219,15 +223,14 @@ int main (int argc, char **argv)
 			memset(dateiname, 0, BUF);
 
 			cout << " Fertig" << endl;
-		}else
-		if(ee == "list")
-		{
-			char list[BUF];
+
+		}else if(ee=="list")
+      	{
+      		char list[BUF];
       		memset(list,0,BUF);
       		recvMsg(create_socket, list);
         	cout<<list<<endl;
-		}
-
+        }
 	}
 	while (strcmp(eingabe,"quit"));
 	close (create_socket);
