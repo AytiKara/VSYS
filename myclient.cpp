@@ -229,7 +229,7 @@ int main (int argc, char **argv)
 		}
 
 	}
-	while (eingabe != "quit");
+	while (strcmp(eingabe,"quit"));
 	close (create_socket);
 	return EXIT_SUCCESS;
 }
