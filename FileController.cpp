@@ -12,7 +12,7 @@ FileController::~FileController()
 {
 
 }
-void FileController::writeFile(char filename[], char  *datei, long size, int typeOfSide)
+void FileController::writeFile(char filename[],string datei, int typeOfSide)
 {
 
 	string eingabe = filename;
@@ -21,24 +21,33 @@ void FileController::writeFile(char filename[], char  *datei, long size, int typ
 		eingabe = "download/" + eingabe;
 
 
-	ofstream outfile (eingabe.c_str(), ios::binary | ios::out); 
-	outfile.write(datei, size);
-	outfile.close();
+	ofstream myfile;
+	myfile.open (eingabe.c_str());
+	myfile << datei;
+	myfile.close();
 
 }
 
-void FileController::getFile(char filename[], char * datei, long size, int typeOfSide)
+string FileController::getFile(char filename[], int typeOfSide)
 {
 	string eingabe = filename;
-
+	string zeile;
 	if (!typeOfSide)
 		eingabe = "download/" + eingabe;
 
-	ifstream infile (eingabe.c_str(), ios::binary |	ios::in); 
-	infile.read(datei, size);
-	infile.close();
+	string line;
+	ifstream myfile (eingabe.c_str());
+	if (myfile.is_open())
+	{
+		while ( getline (myfile, line) )
+		{
+			zeile += line+"\n";
+			
+		}
+		myfile.close();
+	}
 
-
+	return zeile;
 
 }
 
@@ -56,12 +65,12 @@ bool FileController::checkIfExists(string filename, int typeOfSide)
 	else return false;
 }
 
-long FileController::getSize(char filename[],int typeOfSide)
+long FileController::getSize(char filename[], int typeOfSide)
 {
 	string eingabe = filename;
 
-	if(!typeOfSide)
-		eingabe= "download/" + eingabe;
+	if (!typeOfSide)
+		eingabe = "download/" + eingabe;
 
 	ifstream infile (eingabe.c_str(), ios::binary |	ios::in);
 	infile.seekg (0, infile.end);

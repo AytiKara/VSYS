@@ -13,6 +13,8 @@
 #include <string>
 #include <sstream>
 #include "FileController.h"
+#include <errno.h>
+#include "LdapAuth.h"
 #define BUF 1024
 //#define PORT 6543
 #define FBUF 500
@@ -67,13 +69,13 @@ int main (int argc, char **argv)
 	int size;
 	int PORT;
 	if (argc < 3)
-  	{
-       printf("Usage: %s Port Downloadverzeichnis\n", argv[0]);
-       exit(EXIT_FAILURE);
-  	}
+	{
+		printf("Usage: %s Port Downloadverzeichnis\n", argv[0]);
+		exit(EXIT_FAILURE);
+	}
 
-  	errno = 0;
-  	PORT = strtol(argv[1], &argv[1], 10);
+	errno = 0;
+	PORT = strtol(argv[1], &argv[1], 10);
 
 	struct sockaddr_in address, cliaddress;
 
@@ -101,11 +103,11 @@ int main (int argc, char **argv)
 		printf("Waiting for connections...\n");
 		new_socket = accept ( create_socket, (struct sockaddr *) &cliaddress, &addrlen );
 
-		pid = fork();
-		if (pid != 0) {
-			close(new_socket);
-			continue;
-		}
+		// pid = fork();
+		// if (pid != 0) {
+		// 	close(new_socket);
+		// 	continue;
+		// }
 		if (new_socket > 0)
 		{
 
@@ -113,10 +115,52 @@ int main (int argc, char **argv)
 			strcpy(buffer, "Welcome to myserver, Please enter your command:\n");
 			send(new_socket, buffer, strlen(buffer), 0);
 		}
+		bool userOk = false;
+		int userEntryCount = 0;
 		do
 		{
+
 			memset(buffer, 0, BUF);
-			FileController fc;
+			char  uid[BUF], passwd[BUF];
+
+			while (userEntryCount < 3 && !userOk)
+			{
+
+				userEntryCount++;
+				size = recvMsg(new_socket, uid);
+				string suid = uid;
+
+				size = recvMsg(new_socket, passwd);
+				string spasswd = passwd;
+
+				LdapAuth ld;
+				if (ld.getStatus()) {
+					if (ld.checkUser(suid, spasswd))
+					{
+						bool userOk = true;
+						sendMsg(new_socket, "ok", strlen("ok"));
+
+						break;
+					}
+
+
+				}
+				sendMsg(new_socket, "nok", strlen("nok"));
+
+			}
+
+			if (!userOk)
+			{
+				FileController blacklist;
+				string listBlack;
+				listBlack= blacklist.getFile("blacklist.txt",1);
+				listBlack+=uid;
+				blacklist.writeFile("blacklist.txt",listBlack,1);
+				cout<<"Blacklist"<<endl;
+
+			}
+			// 	break;
+
 			size = recvMsg(new_socket, buffer);
 
 			if ( size > 0)
@@ -172,8 +216,9 @@ int main (int argc, char **argv)
 
 					cout << " Fertig" << endl;
 
-				}else if (eingang == "get")
+				} else if (eingang == "get")
 				{
+					FileController fc;
 
 					char dateiname [BUF];
 					memset(dateiname, 0, BUF);
@@ -223,57 +268,57 @@ int main (int argc, char **argv)
 					infile.close();
 					cout << " Fertig" << endl;
 
-				}else if(eingang=="list")
-           		{
-	           	  DIR *d;
-	              struct dirent *dir;
-	              //TODO: ändere download in eingabe von user
-	              d = opendir(argv[2]);
+				} else if (eingang == "list")
+				{
+					DIR *d;
+					struct dirent *dir;
+					//TODO: ändere download in eingabe von user
+					d = opendir(argv[2]);
 
-	              string listOfFiles="";
+					string listOfFiles = "";
 
-	              FILE *pFile;
-	              long size;
-	              string path_filename= "";
-	              stringstream ss;
-	              string dumpstring = "";
-				  char fileNames[BUF];
-	              if(d)
-	              {
-	                while ((dir = readdir(d)) != NULL)
-	                {
-	                	//TODO ändere download in eingabe von user
-	                	path_filename = "download/";
-	                  	path_filename += dir->d_name;
-	               	  	listOfFiles+=dir->d_name;
-	                  	listOfFiles+="\n";
-	                  	//file wird geöffnet
-	                  	pFile = fopen (path_filename.c_str(),"rb");
-	                  	if (pFile==NULL) perror ("Error opening file");
-	                  	else
-	                  	{
-	                    	fseek (pFile, 0, SEEK_END);
-	                    	size=ftell (pFile);
-	                    	fclose (pFile);
-	                    	//printf ("Size of : %ld bytes.\n",size);
-	                    	dumpstring = "";
-	                    	ss.str(string());
-	                    	ss << size;
-	                    	dumpstring = ss.str();
-	                    	listOfFiles += dumpstring;
-	                    	listOfFiles += " Bytes\n";
-	                    	//cout<<dumpstring;
-	                  	}
-	                }
-	                closedir(d);
-	                strcat(fileNames, listOfFiles.c_str());
-	              }
-              	  sendMsg(new_socket, fileNames, strlen(fileNames));
+					FILE *pFile;
+					long size;
+					string path_filename = "";
+					stringstream ss;
+					string dumpstring = "";
+					char fileNames[BUF];
+					if (d)
+					{
+						while ((dir = readdir(d)) != NULL)
+						{
+							//TODO ändere download in eingabe von user
+							path_filename = "download/";
+							path_filename += dir->d_name;
+							listOfFiles += dir->d_name;
+							listOfFiles += "\n";
+							//file wird geöffnet
+							pFile = fopen (path_filename.c_str(), "rb");
+							if (pFile == NULL) perror ("Error opening file");
+							else
+							{
+								fseek (pFile, 0, SEEK_END);
+								size = ftell (pFile);
+								fclose (pFile);
+								//printf ("Size of : %ld bytes.\n",size);
+								dumpstring = "";
+								ss.str(string());
+								ss << size;
+								dumpstring = ss.str();
+								listOfFiles += dumpstring;
+								listOfFiles += " Bytes\n";
+								//cout<<dumpstring;
+							}
+						}
+						closedir(d);
+						strcat(fileNames, listOfFiles.c_str());
+					}
+					sendMsg(new_socket, fileNames, strlen(fileNames));
 
 
-            }
-            else
-           	cout<<"Message received: "<<eingang<<endl;
+				}
+				else
+					cout << "Message received: " << eingang << endl;
 
 			}
 			else if (size == 0)

@@ -107,6 +107,9 @@ int main (int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	char eingabe[BUF];
+
+	bool userOk = false;
+	int userEntryCount = 0;
 	do
 	{
 		// do
@@ -115,6 +118,33 @@ int main (int argc, char **argv)
 
 
 		// }while();
+		while (userEntryCount < 3 && !userOk) {
+			userEntryCount++;
+			//Sende User id
+			memset(eingabe, 0, BUF);
+			cout << "Uid: "; cin >> eingabe;
+			sendMsg(create_socket, eingabe, strlen(eingabe));
+
+			//Sende Passwort
+			memset(eingabe, 0, BUF);
+			strcat(eingabe,getpass("Passwort: "));
+			sendMsg(create_socket, eingabe, strlen(eingabe));
+
+			recvMsg(create_socket, buffer);
+			string sok = buffer;
+			if (sok == "ok")
+				break;
+			else
+			{
+				cout << buffer << endl;
+			}
+
+		}
+
+		if (!userOk)break;
+
+		cout << "Anmeldung erfolgreich" << endl;
+
 
 		memset(eingabe, 0, BUF);
 		cout << "Anfrage: ";	cin >> eingabe;
@@ -122,7 +152,6 @@ int main (int argc, char **argv)
 		FileController fc;
 		sendMsg(create_socket, eingabe, strlen(eingabe));
 		string ee = eingabe;
-
 
 		if (ee == "put")
 		{
@@ -186,8 +215,8 @@ int main (int argc, char **argv)
 			//Dateiname empfangen
 			char dateiname[BUF];
 			memset(dateiname, 0, BUF);
-			cout<<"Datei: "; cin>>dateiname;
-			sendMsg(create_socket,dateiname,strlen(dateiname));
+			cout << "Datei: "; cin >> dateiname;
+			sendMsg(create_socket, dateiname, strlen(dateiname));
 
 			//Dateigröße empfangen
 			char cSize[BUF];
@@ -224,15 +253,15 @@ int main (int argc, char **argv)
 
 			cout << " Fertig" << endl;
 
-		}else if(ee=="list")
-      	{
-      		char list[BUF];
-      		memset(list,0,BUF);
-      		recvMsg(create_socket, list);
-        	cout<<list<<endl;
-        }
+		} else if (ee == "list")
+		{
+			char list[BUF];
+			memset(list, 0, BUF);
+			recvMsg(create_socket, list);
+			cout << list << endl;
+		}
 	}
-	while (strcmp(eingabe,"quit"));
+	while (strcmp(eingabe, "quit"));
 	close (create_socket);
 	return EXIT_SUCCESS;
 }
