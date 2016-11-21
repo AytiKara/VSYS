@@ -137,7 +137,7 @@ int main (int argc, char **argv)
 				if (ld.getStatus()) {
 					if (ld.checkUser(suid, spasswd))
 					{
-						bool userOk = true;
+						userOk = true;
 						sendMsg(new_socket, "ok", strlen("ok"));
 
 						break;

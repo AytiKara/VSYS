@@ -132,8 +132,10 @@ int main (int argc, char **argv)
 
 			recvMsg(create_socket, buffer);
 			string sok = buffer;
-			if (sok == "ok")
+			if (sok == "ok"){
+				userOk=true;
 				break;
+			}
 			else
 			{
 				cout << buffer << endl;
