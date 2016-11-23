@@ -4,7 +4,8 @@
 #include "FileController.h"
 
 using namespace std;
-FileController::FileController()
+
+FileController::FileController(string pFilename): filename(pFilename)
 {
 
 }
@@ -12,37 +13,28 @@ FileController::~FileController()
 {
 
 }
-void FileController::writeFile(char filename[],string datei, int typeOfSide)
+void FileController::writeFile(string datei)
 {
-
-	string eingabe = filename;
-
-	if (!typeOfSide)
-		eingabe = "download/" + eingabe;
-
 
 	ofstream myfile;
-	myfile.open (eingabe.c_str());
+	myfile.open (filename.c_str());
 	myfile << datei;
 	myfile.close();
-
 }
 
-string FileController::getFile(char filename[], int typeOfSide)
+string FileController::getFile()
 {
-	string eingabe = filename;
+
 	string zeile;
-	if (!typeOfSide)
-		eingabe = "download/" + eingabe;
 
 	string line;
-	ifstream myfile (eingabe.c_str());
+	ifstream myfile (filename.c_str());
 	if (myfile.is_open())
 	{
 		while ( getline (myfile, line) )
 		{
-			zeile += line+"\n";
-			
+			zeile += line + "\n";
+
 		}
 		myfile.close();
 	}
@@ -78,4 +70,24 @@ long FileController::getSize(char filename[], int typeOfSide)
 	infile.seekg(0);
 	infile.close();
 	return size;
+}
+bool FileController::checkUserIp(string uIp)
+{
+	string zeile;
+	string line;
+
+	int offset;
+	ifstream myfile(filename.c_str());
+	if (myfile.is_open())
+	{
+		while (getline (myfile, line))
+		{
+			if((offset = line.find(uIp,0)) != string::npos)
+			{
+				return true;
+			}
+		}
+		myfile.close();
+	}
+	return false;
 }

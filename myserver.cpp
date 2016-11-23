@@ -13,7 +13,6 @@
 #include <string>
 #include <sstream>
 #include "FileController.h"
-#include <errno.h>
 #include "LdapAuth.h"
 #define BUF 1024
 //#define PORT 6543
@@ -74,7 +73,8 @@ int main (int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	errno = 0;
+	string downloadDir = argv[2];
+
 	PORT = strtol(argv[1], &argv[1], 10);
 
 	struct sockaddr_in address, cliaddress;
@@ -103,11 +103,11 @@ int main (int argc, char **argv)
 		printf("Waiting for connections...\n");
 		new_socket = accept ( create_socket, (struct sockaddr *) &cliaddress, &addrlen );
 
-		// pid = fork();
-		// if (pid != 0) {
-		// 	close(new_socket);
-		// 	continue;
-		// }
+		pid = fork();
+		if (pid != 0) {
+			close(new_socket);
+			continue;
+		}
 		if (new_socket > 0)
 		{
 
@@ -119,9 +119,23 @@ int main (int argc, char **argv)
 		int userEntryCount = 0;
 		do
 		{
-
+			string userIP = inet_ntoa (cliaddress.sin_addr);
 			memset(buffer, 0, BUF);
 			char  uid[BUF], passwd[BUF];
+
+			char sayOk[] = "ok";
+			char sayNotOk[] = "nok";
+			char noEntry[] = "ne";
+
+			FileController cUIP("blacklist.txt");
+			if (cUIP.checkUserIp(userIP))
+			{
+				sendMsg(new_socket,noEntry,sizeof(noEntry));
+				break;
+			}else
+			{
+				sendMsg(new_socket,sayOk,sizeof(sayOk));
+			}
 
 			while (userEntryCount < 3 && !userOk)
 			{
@@ -134,29 +148,34 @@ int main (int argc, char **argv)
 				string spasswd = passwd;
 
 				LdapAuth ld;
+				// ld.getAllUser();
 				if (ld.getStatus()) {
-					if (ld.checkUser(suid, spasswd))
-					{
-						userOk = true;
-						sendMsg(new_socket, "ok", strlen("ok"));
+					if (ld.checkAllUser(suid)) {
 
-						break;
+						if (ld.checkUser(spasswd))
+						{
+							userOk = true;
+							sendMsg(new_socket, sayOk, sizeof(sayOk));
+
+							break;
+						}
 					}
 
 
 				}
-				sendMsg(new_socket, "nok", strlen("nok"));
+				sendMsg(new_socket, sayNotOk, sizeof(sayNotOk));
+
 
 			}
 
 			if (!userOk)
 			{
-				FileController blacklist;
+				FileController blacklist("blacklist.txt");
 				string listBlack;
-				listBlack= blacklist.getFile("blacklist.txt",1);
-				listBlack+=uid;
-				blacklist.writeFile("blacklist.txt",listBlack,1);
-				cout<<"Blacklist"<<endl;
+				listBlack = blacklist.getFile();
+				listBlack += userIP;
+				blacklist.writeFile(listBlack);
+				cout << "Blacklist" << endl;
 
 			}
 			// 	break;
@@ -189,7 +208,7 @@ int main (int argc, char **argv)
 					int pos = 0;
 
 					string sDateiname = dateiname;
-					sDateiname = "download/" + sDateiname;
+					sDateiname = downloadDir + "/" + sDateiname;
 					ofstream outfile (sDateiname.c_str(), ios::binary | ios::out);
 
 					while (lsize)
@@ -218,11 +237,13 @@ int main (int argc, char **argv)
 
 				} else if (eingang == "get")
 				{
-					FileController fc;
+
 
 					char dateiname [BUF];
 					memset(dateiname, 0, BUF);
 					recvMsg(new_socket, dateiname);
+
+					FileController fc(dateiname);
 
 					//Send der Dateigröße
 					long lsize = fc.getSize(dateiname, 0);
@@ -235,7 +256,7 @@ int main (int argc, char **argv)
 
 
 					string sDateiname = dateiname;
-					sDateiname = "download/" + sDateiname;
+					sDateiname = downloadDir + "/" + sDateiname;
 					ifstream infile (sDateiname.c_str(), ios::binary |	ios::in);
 
 					while (lsize)
@@ -288,7 +309,7 @@ int main (int argc, char **argv)
 						while ((dir = readdir(d)) != NULL)
 						{
 							//TODO ändere download in eingabe von user
-							path_filename = "download/";
+							path_filename = downloadDir + "/";
 							path_filename += dir->d_name;
 							listOfFiles += dir->d_name;
 							listOfFiles += "\n";

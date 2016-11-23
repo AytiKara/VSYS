@@ -15,8 +15,18 @@
 #define BUF 1024
 //#define PORT 6543
 #define FBUF 500
+#define PERCENTAGE_SCALE 75
 
 using namespace std;
+void showProgressBar(double chunksNr, double chunksTotal) {
+    int percentageChunksSent = (int) (chunksNr/chunksTotal * PERCENTAGE_SCALE);
+    printf("[");
+    for(int i = 0; i < percentageChunksSent; i++) printf("#");
+    for(int i = percentageChunksSent; i < PERCENTAGE_SCALE; i++) printf(" ");
+    printf("] %d%s", percentageChunksSent*100/PERCENTAGE_SCALE, "%");
+    fflush(stdout);
+    printf("\r");
+}
 
 template <typename T>
 string numberToString(T x)
@@ -118,6 +128,15 @@ int main (int argc, char **argv)
 
 
 		// }while();
+		memset(buffer,0,BUF);
+		recvMsg(create_socket, buffer);
+		string recvMessage = buffer;
+		if(recvMessage == "ne")
+		{
+			cout<<"Sie sind gesperrt!"<<endl;
+			break;
+		}
+
 		while (userEntryCount < 3 && !userOk) {
 			userEntryCount++;
 			//Sende User id
@@ -127,13 +146,14 @@ int main (int argc, char **argv)
 
 			//Sende Passwort
 			memset(eingabe, 0, BUF);
-			strcat(eingabe,getpass("Passwort: "));
+			strcat(eingabe, getpass("Passwort: "));
 			sendMsg(create_socket, eingabe, strlen(eingabe));
 
 			recvMsg(create_socket, buffer);
 			string sok = buffer;
-			if (sok == "ok"){
-				userOk=true;
+			if (sok == "ok") {
+				userOk = true;
+				cout << "Anmeldung erfolgreich" << endl;
 				break;
 			}
 			else
@@ -145,13 +165,13 @@ int main (int argc, char **argv)
 
 		if (!userOk)break;
 
-		cout << "Anmeldung erfolgreich" << endl;
+
 
 
 		memset(eingabe, 0, BUF);
 		cout << "Anfrage: ";	cin >> eingabe;
 		//File Objekt ist zuständig für das schreiben und lesen der Datei
-		FileController fc;
+
 		sendMsg(create_socket, eingabe, strlen(eingabe));
 		string ee = eingabe;
 
@@ -165,7 +185,7 @@ int main (int argc, char **argv)
 			cout << "Datei: ";
 			cin >> dateiname;
 			sendMsg(create_socket, dateiname, strlen(dateiname));
-
+			FileController fc(dateiname);
 			//Send der Dateigröße
 			long lsize = fc.getSize(dateiname, 1);
 			char  ssize[BUF] ;
@@ -176,6 +196,8 @@ int main (int argc, char **argv)
 			int anz = 0;
 
 			ifstream infile (dateiname, ios::binary |	ios::in);
+			int pos=0;
+			int totalPacket = lsize /FBUF;
 
 			while (lsize)
 			{
@@ -187,9 +209,10 @@ int main (int argc, char **argv)
 					infile.read(block, FBUF);
 					sendMsg(create_socket, block, FBUF);
 
+
 					//neue Position wird festgelegt
 					lsize -= FBUF;
-
+					pos++;
 
 				}
 				else
@@ -200,14 +223,19 @@ int main (int argc, char **argv)
 					//Letzter Block wird gesendet
 					sendMsg(create_socket, block, lsize);
 					lsize = 0;
-
+					pos++;
 				}
-
+				showProgressBar(pos,totalPacket);
+				// Soll warten bevor er das nächste Paket schickt, 
+				// manchmal schickt der Client zu früh los bevor er was ausgeben kann
+				 usleep(1);
 				memset(block, 0, BUF);
 				anz++;
 			}
+			cout << endl;
 			infile.close();
-			cout << " Fertig" << endl;
+			pos--;
+			cout << "Fertig: "<<pos<<"/"<<totalPacket<<" Pakete abgeschickt" << endl;
 
 		}
 		else if (ee == "get")
@@ -231,6 +259,7 @@ int main (int argc, char **argv)
 			int pos = 0;
 
 			ofstream outfile (dateiname, ios::binary | ios::out);
+			int totalPacket= lsize / FBUF;
 
 			while (lsize)
 			{
@@ -240,20 +269,26 @@ int main (int argc, char **argv)
 					recvMsg(create_socket, buffer);
 					lsize -= FBUF;
 					outfile.write(buffer, FBUF);
+					pos++;
 				} else
 				{
 					recvMsg(create_socket, buffer);
 					outfile.write(buffer, lsize);
 					lsize = 0;
+					pos++;
 				}
-
+				showProgressBar(pos,totalPacket);
+				// Soll warten bevor er das nächste Paket schickt, 
+				// manchmal schickt der Client zu früh los bevor er was ausgeben kann
+				 usleep(1);
 				memset(buffer, 0, BUF);
 				anz++;
 			}
+			cout<<endl;
 			outfile.close();
 			memset(dateiname, 0, BUF);
-
-			cout << " Fertig" << endl;
+			pos--;
+			cout << "Fertig "<<pos<<"/"<<totalPacket<<" bekommen" << endl;
 
 		} else if (ee == "list")
 		{

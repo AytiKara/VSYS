@@ -63,7 +63,7 @@ int main()
 
    for (e = ldap_first_entry(ld, result); e != NULL; e = ldap_next_entry(ld,e))
    {
-      printf("DN: %s\n", ldap_get_dn(ld,e));
+      printf("DN: %s\n", lqdap_get_dn(ld,e));
       
       /* Now print the attributes and values of each found entry */
 
